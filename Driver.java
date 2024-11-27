@@ -8,16 +8,17 @@ import javax.swing.*;
 
 import org.openstreetmap.gui.jmapviewer.Coordinate;
 import org.openstreetmap.gui.jmapviewer.JMapViewer;
+import org.openstreetmap.gui.jmapviewer.MapPolygonImpl;
 import org.openstreetmap.gui.jmapviewer.tilesources.OsmTileSource;
 
 import java.awt.*;
 import java.awt.event.*;
 
 public class Driver{
+	private static boolean readyToRun = true;
 	
-	// Declare class data
-
     public static void main(String[] args) throws FileNotFoundException, IOException {
+    	
     	TripPoint.readFile("triplog.csv");
     	TripPoint.h1StopDetection();
     	
@@ -55,9 +56,19 @@ public class Driver{
 		playButton.setBackground(Color.LIGHT_GRAY);
 		mainPanel.add(playButton);
 		
+		ArrayList<Coordinate> pathCoordinates = new ArrayList<>();
+		MapPolygonImpl polygon = new MapPolygonImpl(pathCoordinates);
+		polygon.setColor(Color.RED);
+		polygon.setBackColor(null);
+		viewer.addMapPolygon(polygon);
+		
 		playButton.addActionListener(new ActionListener() {
-			
 			public void actionPerformed(ActionEvent e) {
+				if(readyToRun == false) {
+					return;
+				}
+				readyToRun = false;
+				
 				ArrayList<TripPoint> tripPoints;
 				if(checkbox.isSelected())
 					tripPoints = TripPoint.getTrip();
@@ -66,8 +77,9 @@ public class Driver{
 				String dropdownText = dropdown.getSelectedItem().toString();
 				int dropdownOption = dropdownText.equals("Animation Time") ? 15 : Integer.parseInt(dropdownText);
 				
-				System.out.println(dropdownOption);
 				int delay = (int)  (dropdownOption * 1000 / TripPoint.getTrip().size());
+				
+				pathCoordinates.clear();
 				
 				Timer timer = new Timer(delay, new ActionListener() {
 					private int index = 0;
@@ -77,11 +89,19 @@ public class Driver{
 							TripPoint p = tripPoints.get(index);
 							marker.setLat(p.getLat());
 							marker.setLon(p.getLon());
+							//viewer.repaint();
 							
+							//viewer.removeMapPolygon(polygon);
+							pathCoordinates.add(new Coordinate(p.getLat(), p.getLon()));
+							//polygon = new MapPolygonImpl(pathCoordinates);
+							
+							//viewer.addMapPolygon(polygon);
 							viewer.repaint();
+							
 							index++;
 						}else {
 							((Timer) e.getSource()).stop();
+							readyToRun = true;
 						}
 					}
 					
@@ -100,7 +120,5 @@ public class Driver{
         
         
     }
-    
-    // Animate the trip based on selections from the GUI components
     
 }
